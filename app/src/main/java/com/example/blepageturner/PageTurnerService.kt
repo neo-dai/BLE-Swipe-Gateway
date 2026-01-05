@@ -126,6 +126,7 @@ class PageTurnerService : Service() {
         val builder = if (Build.VERSION.SDK_INT >= 26) {
             Notification.Builder(this, NOTIF_CHANNEL_ID)
         } else {
+            @Suppress("DEPRECATION")
             Notification.Builder(this)
         }
 
