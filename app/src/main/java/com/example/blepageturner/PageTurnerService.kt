@@ -64,14 +64,20 @@ class PageTurnerService : Service() {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val cmd = parseCommand(result) ?: return
+            val parsed = parsePayload(result) ?: return
 
             val now = SystemClock.elapsedRealtime()
             val last = lastTriggerAt.get()
-            if (now - last < DEBOUNCE_MS) return
-            lastTriggerAt.set(now)
 
-            dispatchCommand(cmd)
+            val cmd = parsed.cmd
+            val debounced = (cmd != null) && (now - last < DEBOUNCE_MS)
+
+            if (cmd != null && !debounced) {
+                lastTriggerAt.set(now)
+                dispatchCommand(cmd)
+            }
+
+            maybeLog(result.rssi, parsed.source, parsed.payload, cmd, debounced)
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>) {
@@ -215,26 +221,77 @@ class PageTurnerService : Service() {
         }
     }
 
-    private fun parseCommand(result: ScanResult): Int? {
+    private data class ParsedPayload(
+        val source: String,
+        val payload: ByteArray,
+        val cmd: Int?
+    )
+
+    private fun parsePayload(result: ScanResult): ParsedPayload? {
         val record = result.scanRecord ?: return null
 
         // 优先解析 Service Data：key 为 SERVICE_UUID
         val serviceData = record.getServiceData(ParcelUuid(SERVICE_UUID))
-        val payload = when {
+        val payload: ByteArray? = when {
             serviceData != null && serviceData.isNotEmpty() -> serviceData
             else -> {
                 // 兼容：如果手环端把数据放在 Manufacturer Data 里，这里取第一个 entry
                 val msd = record.manufacturerSpecificData
                 if (msd != null && msd.size() > 0) msd.valueAt(0) else null
             }
-        } ?: return null
-
-        val b = payload[0].toInt() and 0xFF
-        return when (b) {
-            0x01 -> CMD_PREV
-            0x02 -> CMD_NEXT
-            else -> null
         }
+
+        val p = payload ?: return null
+
+        val source = if (serviceData != null && serviceData.isNotEmpty()) {
+            "serviceData"
+        } else {
+            "manufacturerData"
+        }
+
+        val cmd = if (p.isNotEmpty()) {
+            when (p[0].toInt() and 0xFF) {
+                0x01 -> CMD_PREV
+                0x02 -> CMD_NEXT
+                else -> null
+            }
+        } else {
+            null
+        }
+
+        return ParsedPayload(source, p, cmd)
+    }
+
+    private fun maybeLog(rssi: Int, source: String, payload: ByteArray, cmd: Int?, debounced: Boolean) {
+        if (!ProtocolLogStore.isEnabled(this)) return
+
+        val cmdLabel = when (cmd) {
+            CMD_PREV -> "PREV(0x01)"
+            CMD_NEXT -> "NEXT(0x02)"
+            else -> "UNKNOWN"
+        }
+
+        val line =
+            "ts=${System.currentTimeMillis()} rssi=$rssi src=$source len=${payload.size} data=${toHex(payload)} cmd=$cmdLabel debounced=$debounced"
+
+        ProtocolLogStore.add(line)
+
+        val i = Intent(ProtocolLogStore.ACTION_PROTOCOL_LOG)
+            .setPackage(packageName)
+            .putExtra(ProtocolLogStore.EXTRA_LINE, line)
+        sendBroadcast(i)
+    }
+
+    private fun toHex(bytes: ByteArray): String {
+        val sb = StringBuilder(bytes.size * 2)
+        for (b in bytes) {
+            val v = b.toInt() and 0xFF
+            val hi = v ushr 4
+            val lo = v and 0x0F
+            sb.append("0123456789ABCDEF"[hi])
+            sb.append("0123456789ABCDEF"[lo])
+        }
+        return sb.toString()
     }
 
     private fun dispatchCommand(cmd: Int) {

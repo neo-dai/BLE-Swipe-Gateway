@@ -6,6 +6,7 @@ import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import android.view.Gravity
+import android.widget.Switch
 import android.widget.Button
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -27,6 +28,21 @@ class MainActivity : Activity() {
             setOnClickListener {
                 requestNeededPermissions()
                 status.text = buildStatusText()
+            }
+        }
+
+        val swLog = Switch(this).apply {
+            text = "显示协议日志"
+            isChecked = ProtocolLogStore.isEnabled(this@MainActivity)
+            setOnCheckedChangeListener { _, checked ->
+                ProtocolLogStore.setEnabled(this@MainActivity, checked)
+            }
+        }
+
+        val btnLogs = Button(this).apply {
+            text = "查看协议日志"
+            setOnClickListener {
+                startActivity(Intent(this@MainActivity, LogActivity::class.java))
             }
         }
 
@@ -59,6 +75,8 @@ class MainActivity : Activity() {
             setPadding(32, 48, 32, 48)
             addView(status)
             addView(btnPerm)
+            addView(swLog)
+            addView(btnLogs)
             addView(btnA11y)
             addView(btnStart)
             addView(btnStop)
