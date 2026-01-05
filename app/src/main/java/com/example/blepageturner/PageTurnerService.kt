@@ -73,7 +73,8 @@ class PageTurnerService : Service() {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            if (ProtocolLogStore.scanAll) {
+            val debugAddrOk = matchesDebugAddressFilter(result)
+            if (ProtocolLogStore.scanAll && debugAddrOk) {
                 logAnyAdvertisement(result)
             }
 
@@ -90,7 +91,9 @@ class PageTurnerService : Service() {
                 dispatchCommand(cmd)
             }
 
-            maybeLog(result.rssi, parsed.source, parsed.payload, cmd, debounced)
+            if (!ProtocolLogStore.scanAll || debugAddrOk) {
+                maybeLog(result.rssi, parsed.source, parsed.payload, cmd, debounced)
+            }
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>) {
@@ -226,6 +229,13 @@ class PageTurnerService : Service() {
         AppLog.i(TAG, "adv addr=$addr rssi=$rssi raw=$rawHex")
     }
 
+    private fun matchesDebugAddressFilter(result: ScanResult): Boolean {
+        val filter = ProtocolLogStore.scanAddressFilter
+        if (filter.isBlank()) return true
+        val addr = result.device?.address ?: return false
+        return addr.equals(filter, ignoreCase = true)
+    }
+
     private fun stopScanIfNeeded() {
         if (!scanning) return
         try {
@@ -264,13 +274,15 @@ class PageTurnerService : Service() {
 
         // 优先解析 Service Data：key 为 SERVICE_UUID
         val serviceData = record.getServiceData(ParcelUuid(SERVICE_UUID))
+        val hasOurService = record.serviceUuids?.any { it.uuid == SERVICE_UUID } == true
         val payload: ByteArray? = when {
             serviceData != null && serviceData.isNotEmpty() -> serviceData
-            else -> {
+            hasOurService -> {
                 // 兼容：如果手环端把数据放在 Manufacturer Data 里，这里取第一个 entry
                 val msd = record.manufacturerSpecificData
                 if (msd != null && msd.size() > 0) msd.valueAt(0) else null
             }
+            else -> null
         }
 
         val p = payload ?: return null

@@ -9,6 +9,7 @@ import android.os.Bundle
 import android.view.Gravity
 import android.view.View
 import android.widget.Button
+import android.widget.EditText
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.TextView
@@ -38,6 +39,20 @@ class LogActivity : Activity() {
             }
         }
 
+        val etAddr = EditText(this).apply {
+            hint = "地址过滤(可空)：AA:BB:CC:DD:EE:FF"
+            setText(ProtocolLogStore.getScanAddressFilter(this@LogActivity))
+        }
+
+        val btnApply = Button(this).apply {
+            text = "应用地址过滤"
+            setOnClickListener {
+                val v = etAddr.text?.toString() ?: ""
+                ProtocolLogStore.setScanAddressFilter(this@LogActivity, v)
+                AppLog.i("LogActivity", "scan address filter=${ProtocolLogStore.scanAddressFilter}")
+            }
+        }
+
         tv = TextView(this).apply {
             textSize = 12f
             setPadding(24, 24, 24, 24)
@@ -51,6 +66,8 @@ class LogActivity : Activity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             addView(btnClear)
+            addView(etAddr)
+            addView(btnApply)
             addView(
                 scroll,
                 LinearLayout.LayoutParams(

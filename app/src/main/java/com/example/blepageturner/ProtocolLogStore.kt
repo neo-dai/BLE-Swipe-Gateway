@@ -7,6 +7,7 @@ object ProtocolLogStore {
     private const val PREFS_NAME = "ble_page_turner"
     const val PREF_LOG_ENABLED = "log_enabled"
     private const val PREF_SCAN_ALL = "scan_all"
+    private const val PREF_SCAN_ADDR_FILTER = "scan_addr_filter"
 
     const val ACTION_PROTOCOL_LOG = "com.example.blepageturner.ACTION_PROTOCOL_LOG"
     const val EXTRA_LINE = "line"
@@ -19,6 +20,10 @@ object ProtocolLogStore {
 
     @Volatile
     var scanAll: Boolean = false
+        private set
+
+    @Volatile
+    var scanAddressFilter: String = ""
         private set
 
     private val lock = Any()
@@ -51,6 +56,23 @@ object ProtocolLogStore {
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(PREF_SCAN_ALL, enabled)
+            .apply()
+    }
+
+    fun getScanAddressFilter(context: Context): String {
+        val v = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(PREF_SCAN_ADDR_FILTER, "")
+            ?: ""
+        scanAddressFilter = v
+        return v
+    }
+
+    fun setScanAddressFilter(context: Context, value: String) {
+        val normalized = value.trim().uppercase()
+        scanAddressFilter = normalized
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(PREF_SCAN_ADDR_FILTER, normalized)
             .apply()
     }
 
