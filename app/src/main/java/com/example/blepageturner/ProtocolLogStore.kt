@@ -12,15 +12,22 @@ object ProtocolLogStore {
 
     private const val MAX_LINES = 200
 
+    @Volatile
+    var enabled: Boolean = false
+        private set
+
     private val lock = Any()
     private val lines = ArrayDeque<String>(MAX_LINES)
 
     fun isEnabled(context: Context): Boolean {
-        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val v = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .getBoolean(PREF_LOG_ENABLED, false)
+        enabled = v
+        return v
     }
 
     fun setEnabled(context: Context, enabled: Boolean) {
+        this.enabled = enabled
         context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
             .edit()
             .putBoolean(PREF_LOG_ENABLED, enabled)

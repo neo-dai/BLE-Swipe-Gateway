@@ -18,6 +18,8 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        AppLog.init(this)
+
         status = TextView(this).apply {
             textSize = 14f
             text = buildStatusText()
@@ -32,7 +34,7 @@ class MainActivity : Activity() {
         }
 
         val swLog = Switch(this).apply {
-            text = "显示协议日志"
+            text = "显示日志(含协议)"
             isChecked = ProtocolLogStore.isEnabled(this@MainActivity)
             setOnCheckedChangeListener { _, checked ->
                 ProtocolLogStore.setEnabled(this@MainActivity, checked)

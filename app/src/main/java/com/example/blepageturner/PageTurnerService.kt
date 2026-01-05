@@ -22,7 +22,6 @@ import android.os.IBinder
 import android.os.PowerManager
 import android.os.SystemClock
 import android.os.ParcelUuid
-import android.util.Log
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicLong
 
@@ -85,12 +84,13 @@ class PageTurnerService : Service() {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.w(TAG, "scan failed: $errorCode")
+            AppLog.w(TAG, "scan failed: $errorCode")
         }
     }
 
     override fun onCreate() {
         super.onCreate()
+        AppLog.init(this)
         createNotificationChannel()
         registerReceiver(
             screenReceiver,
@@ -162,12 +162,12 @@ class PageTurnerService : Service() {
 
         val adapter = BluetoothAdapter.getDefaultAdapter() ?: return
         if (!adapter.isEnabled) {
-            Log.w(TAG, "Bluetooth disabled")
+            AppLog.w(TAG, "Bluetooth disabled")
             return
         }
 
         if (!hasScanPermission()) {
-            Log.w(TAG, "Missing scan permission")
+            AppLog.w(TAG, "Missing scan permission")
             return
         }
 
@@ -188,10 +188,10 @@ class PageTurnerService : Service() {
         try {
             s.startScan(filters, settings, scanCallback)
             scanning = true
-            Log.i(TAG, "scan started")
+            AppLog.i(TAG, "scan started")
         } catch (t: Throwable) {
             scanning = false
-            Log.w(TAG, "startScan failed", t)
+            AppLog.w(TAG, "startScan failed", t)
         }
     }
 
@@ -204,7 +204,7 @@ class PageTurnerService : Service() {
             scanning = false
             // 释放引用：灭屏时尽可能进入休眠态，降低后台消耗
             scanner = null
-            Log.i(TAG, "scan stopped")
+            AppLog.i(TAG, "scan stopped")
         }
     }
 
@@ -263,23 +263,16 @@ class PageTurnerService : Service() {
     }
 
     private fun maybeLog(rssi: Int, source: String, payload: ByteArray, cmd: Int?, debounced: Boolean) {
-        if (!ProtocolLogStore.isEnabled(this)) return
-
         val cmdLabel = when (cmd) {
             CMD_PREV -> "PREV(0x01)"
             CMD_NEXT -> "NEXT(0x02)"
             else -> "UNKNOWN"
         }
 
-        val line =
-            "ts=${System.currentTimeMillis()} rssi=$rssi src=$source len=${payload.size} data=${toHex(payload)} cmd=$cmdLabel debounced=$debounced"
-
-        ProtocolLogStore.add(line)
-
-        val i = Intent(ProtocolLogStore.ACTION_PROTOCOL_LOG)
-            .setPackage(packageName)
-            .putExtra(ProtocolLogStore.EXTRA_LINE, line)
-        sendBroadcast(i)
+        AppLog.i(
+            TAG,
+            "protocol rssi=$rssi src=$source len=${payload.size} data=${toHex(payload)} cmd=$cmdLabel debounced=$debounced"
+        )
     }
 
     private fun toHex(bytes: ByteArray): String {
@@ -300,6 +293,6 @@ class PageTurnerService : Service() {
             .setPackage(packageName)
             .putExtra(EXTRA_CMD, cmd)
         sendBroadcast(i)
-        Log.i(TAG, "command dispatched: $cmd")
+        AppLog.i(TAG, "command dispatched: $cmd")
     }
 }

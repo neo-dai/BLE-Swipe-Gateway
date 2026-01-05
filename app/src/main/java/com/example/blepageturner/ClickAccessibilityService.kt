@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.graphics.Path
-import android.util.Log
 import android.view.accessibility.AccessibilityEvent
 
 class ClickAccessibilityService : AccessibilityService() {
@@ -28,8 +27,9 @@ class ClickAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
+        AppLog.init(this)
         registerReceiver(cmdReceiver, IntentFilter(PageTurnerService.ACTION_PAGE_COMMAND))
-        Log.i(TAG, "accessibility connected")
+        AppLog.i(TAG, "accessibility connected")
     }
 
     override fun onDestroy() {
@@ -84,6 +84,6 @@ class ClickAccessibilityService : AccessibilityService() {
             .build()
 
         val ok = dispatchGesture(gesture, null, null)
-        Log.i(TAG, "tap($x,$y) dispatched=$ok")
+        AppLog.i(TAG, "tap($x,$y) dispatched=$ok")
     }
 }

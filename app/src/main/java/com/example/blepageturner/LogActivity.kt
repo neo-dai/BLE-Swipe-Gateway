@@ -28,6 +28,8 @@ class LogActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        AppLog.init(this)
+
         val btnClear = Button(this).apply {
             text = "清空日志"
             setOnClickListener {
