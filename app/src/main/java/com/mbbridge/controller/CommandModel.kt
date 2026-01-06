@@ -3,6 +3,8 @@ package com.mbbridge.controller
 import android.content.Context
 import android.util.Log
 import org.json.JSONObject
+import java.net.URLDecoder
+import java.nio.charset.StandardCharsets
 
 data class Command(
     val v: Int,
@@ -13,17 +15,38 @@ data class Command(
         private const val TAG = "MBBridgeCtrl"
 
         fun fromJson(jsonString: String): Command? {
+            val trimmed = jsonString.trim()
             return try {
-                val json = JSONObject(jsonString)
-                Command(
-                    v = json.getInt("v"),
-                    ts = json.getLong("ts"),
-                    source = json.getString("source")
-                )
+                if (trimmed.startsWith("{")) {
+                    val json = JSONObject(trimmed)
+                    Command(
+                        v = json.getInt("v"),
+                        ts = json.getLong("ts"),
+                        source = json.getString("source")
+                    )
+                } else {
+                    parseFormEncoded(trimmed)
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "Parse command JSON failed", e)
                 null
             }
+        }
+
+        private fun parseFormEncoded(body: String): Command? {
+            val map = body.split("&")
+                .mapNotNull { part ->
+                    val idx = part.indexOf("=")
+                    if (idx <= 0) return@mapNotNull null
+                    val key = URLDecoder.decode(part.substring(0, idx), StandardCharsets.UTF_8.name())
+                    val value = URLDecoder.decode(part.substring(idx + 1), StandardCharsets.UTF_8.name())
+                    key to value
+                }
+                .toMap()
+            val v = map["v"]?.toIntOrNull() ?: return null
+            val ts = map["ts"]?.toLongOrNull() ?: return null
+            val source = map["source"] ?: "unknown"
+            return Command(v = v, ts = ts, source = source)
         }
     }
 

@@ -76,6 +76,8 @@ class MBBridgeHttpServer(
             return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Empty body"))
         }
 
+        log(LogLevel.DEBUG, "Body: $body")
+
         val command = Command.fromJson(body)
             ?: return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Invalid JSON"))
 
