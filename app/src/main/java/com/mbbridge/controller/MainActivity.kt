@@ -19,6 +19,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -54,6 +55,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
+@OptIn(ExperimentalMaterial3Api::class)
 fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
