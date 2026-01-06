@@ -96,7 +96,7 @@ class MBBridgeService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        Log.i(TAG, "MBBridgeService created")
+        emitLog(LogLevel.INFO, "Service created")
         createNotificationChannel()
         serverPort = portStore.getPort()
         httpServer = MBBridgeHttpServer(this, serverPort)
@@ -105,21 +105,22 @@ class MBBridgeService : Service() {
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
-                Log.i(TAG, "Start command received")
+                emitLog(LogLevel.INFO, "Start command received")
                 val desiredPort = portStore.getPort()
                 if (desiredPort != serverPort) {
+                    emitLog(LogLevel.INFO, "Port changed $serverPort -> $desiredPort")
                     setPort(desiredPort)
                 }
                 startForeground(NOTIFICATION_ID, createNotification(serverPort))
                 startHttpServer()
             }
             ACTION_STOP -> {
-                Log.i(TAG, "Stop command received")
+                emitLog(LogLevel.WARN, "Stop command received")
                 stopHttpServer()
                 stopSelf()
             }
             else -> {
-                Log.d(TAG, "Unknown action: ${intent?.action}")
+                emitLog(LogLevel.DEBUG, "Unknown action: ${intent?.action}")
             }
         }
         return START_STICKY
@@ -132,7 +133,7 @@ class MBBridgeService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
-        Log.i(TAG, "MBBridgeService destroyed")
+        emitLog(LogLevel.WARN, "Service destroyed")
         stopHttpServer()
     }
 
@@ -180,21 +181,21 @@ class MBBridgeService : Service() {
      */
     private fun startHttpServer() {
         if (httpServer?.isRunning() == true) {
-            Log.w(TAG, "Server already running")
+            emitLog(LogLevel.WARN, "Server already running")
             return
         }
 
         val server = httpServer ?: run {
-            Log.e(TAG, "HTTP server not initialized")
+            emitLog(LogLevel.ERROR, "HTTP server not initialized")
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
             return
         }
 
         if (server.startServer()) {
-            Log.i(TAG, "HTTP server started successfully")
+            emitLog(LogLevel.INFO, "HTTP server started successfully")
         } else {
-            Log.e(TAG, "Failed to start HTTP server")
+            emitLog(LogLevel.ERROR, "Failed to start HTTP server")
             stopForeground(STOP_FOREGROUND_REMOVE)
             stopSelf()
         }
@@ -210,6 +211,17 @@ class MBBridgeService : Service() {
 
         httpServer?.stopServer()
         stopForeground(STOP_FOREGROUND_REMOVE)
-        Log.i(TAG, "HTTP server stopped")
+        emitLog(LogLevel.WARN, "HTTP server stopped")
+    }
+
+    private fun emitLog(level: LogLevel, message: String) {
+        when (level) {
+            LogLevel.VERBOSE -> Log.v(TAG, message)
+            LogLevel.DEBUG -> Log.d(TAG, message)
+            LogLevel.INFO -> Log.i(TAG, message)
+            LogLevel.WARN -> Log.w(TAG, message)
+            LogLevel.ERROR -> Log.e(TAG, message)
+        }
+        logListener?.onLog(level, message)
     }
 }
