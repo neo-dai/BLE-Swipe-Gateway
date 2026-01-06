@@ -88,12 +88,16 @@ class PageTurnerService : Service() {
 
     private val scanCallback = object : ScanCallback() {
         override fun onScanResult(callbackType: Int, result: ScanResult) {
-            val debugAddrOk = matchesDebugAddressFilter(result)
-            if (ProtocolLogStore.scanAll && debugAddrOk) {
+            val addrOk = matchesDebugAddressFilter(result)
+            if (!addrOk) return
+
+            val allowManufacturerWithoutService = ProtocolLogStore.scanAddressFilter.isNotBlank()
+
+            if (ProtocolLogStore.scanAll) {
                 logAnyAdvertisement(result)
             }
 
-            val parsed = parsePayload(result) ?: return
+            val parsed = parsePayload(result, allowManufacturerWithoutService) ?: return
 
             val now = SystemClock.elapsedRealtime()
             val last = lastTriggerAt.get()
@@ -106,9 +110,7 @@ class PageTurnerService : Service() {
                 dispatchCommand(cmd)
             }
 
-            if (!ProtocolLogStore.scanAll || debugAddrOk) {
-                maybeLog(result.rssi, parsed.source, parsed.payload, cmd, debounced)
-            }
+            maybeLog(result.rssi, parsed.source, parsed.payload, cmd, debounced)
         }
 
         override fun onBatchScanResults(results: MutableList<ScanResult>) {
@@ -274,7 +276,7 @@ class PageTurnerService : Service() {
         val cmd: Int?
     )
 
-    private fun parsePayload(result: ScanResult): ParsedPayload? {
+    private fun parsePayload(result: ScanResult, allowManufacturerWithoutService: Boolean): ParsedPayload? {
         val record = result.scanRecord ?: return null
 
         // 优先解析 Service Data：key 为 SERVICE_UUID
@@ -282,7 +284,7 @@ class PageTurnerService : Service() {
         val hasOurService = hasOurServiceUuid(record)
         val payload: ByteArray? = when {
             serviceData != null && serviceData.isNotEmpty() -> serviceData
-            hasOurService -> {
+            (hasOurService || allowManufacturerWithoutService) -> {
                 // 兼容：如果手环端把数据放在 Manufacturer Data 里，这里取第一个 entry
                 val msd = record.manufacturerSpecificData
                 if (msd != null && msd.size() > 0) msd.valueAt(0) else null

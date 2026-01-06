@@ -50,6 +50,7 @@ class LogActivity : Activity() {
                 val v = etAddr.text?.toString() ?: ""
                 ProtocolLogStore.setScanAddressFilter(this@LogActivity, v)
                 AppLog.i("LogActivity", "scan address filter=${ProtocolLogStore.scanAddressFilter}")
+                sendBroadcast(Intent(PageTurnerService.ACTION_RESTART_SCAN).setPackage(packageName))
             }
         }
 

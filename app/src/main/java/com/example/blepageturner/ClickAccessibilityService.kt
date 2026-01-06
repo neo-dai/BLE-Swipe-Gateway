@@ -18,9 +18,11 @@ class ClickAccessibilityService : AccessibilityService() {
     private val cmdReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context, intent: Intent) {
             val cmd = intent.getIntExtra(PageTurnerService.EXTRA_CMD, -1)
+            AppLog.i(TAG, "received cmd=$cmd")
             when (cmd) {
                 PageTurnerService.CMD_NEXT -> tapRightEdge()
                 PageTurnerService.CMD_PREV -> tapLeftEdge()
+                else -> AppLog.w(TAG, "unknown cmd=$cmd")
             }
         }
     }
