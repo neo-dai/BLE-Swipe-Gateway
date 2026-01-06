@@ -2,7 +2,6 @@
 
 ## 1. 导入与编译
 ```bash
-cd MBBridgeController
 ./gradlew assembleDebug
 ```
 

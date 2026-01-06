@@ -46,51 +46,48 @@ jobs:
 
     - name: Grant execute permission for gradlew
       run: |
-        cd MBBridgeController
         chmod +x gradlew
 
     - name: Build Debug APK
       run: |
-        cd MBBridgeController
         ./gradlew assembleDebug --no-daemon
 
     - name: Build Release APK
       run: |
-        cd MBBridgeController
         ./gradlew assembleRelease --no-daemon
 
     - name: Rename APKs
       run: |
         APK_VER="${{ steps.version.outputs.apk_version }}"
         # 重命名 Debug APK
-        mv MBBridgeController/app/build/outputs/apk/debug/app-debug.apk \
-           MBBridgeController/MBBridgeController-${APK_VER}-debug.apk
+        mv app/build/outputs/apk/debug/app-debug.apk \
+           MBBridgeController-${APK_VER}-debug.apk
         # 重命名 Release APK
-        mv MBBridgeController/app/build/outputs/apk/release/app-release.apk \
-           MBBridgeController/MBBridgeController-${APK_VER}-release.apk
+        mv app/build/outputs/apk/release/app-release.apk \
+           MBBridgeController-${APK_VER}-release.apk
         echo "Renamed APKs to: MBBridgeController-${APK_VER}-[debug|release].apk"
 
     - name: Verify renamed APKs
       run: |
         APK_VER="${{ steps.version.outputs.apk_version }}"
         echo "=== Checking APK files ==="
-        ls -lh MBBridgeController/*.apk
+        ls -lh *.apk
         echo ""
         echo "=== File names ==="
-        basename MBBridgeController/*.apk
+        basename *.apk
 
     - name: Upload Debug APK
       uses: actions/upload-artifact@v4
       with:
         name: MBBridgeController-${{ steps.version.outputs.apk_version }}-debug
-        path: MBBridgeController/MBBridgeController-${{ steps.version.outputs.apk_version }}-debug.apk
+        path: MBBridgeController-${{ steps.version.outputs.apk_version }}-debug.apk
         retention-days: 30
 
     - name: Upload Release APK
       uses: actions/upload-artifact@v4
       with:
         name: MBBridgeController-${{ steps.version.outputs.apk_version }}-release
-        path: MBBridgeController/MBBridgeController-${{ steps.version.outputs.apk_version }}-release.apk
+        path: MBBridgeController-${{ steps.version.outputs.apk_version }}-release.apk
         retention-days: 90
 
     - name: Get APK info
@@ -111,10 +108,10 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**📦 APK 文件:**" >> $GITHUB_STEP_SUMMARY
         echo "- Debug: \`${DEBUG_APK}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- 大小: $(du -h MBBridgeController/${DEBUG_APK} | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        echo "- 大小: $(du -h ${DEBUG_APK} | cut -f1)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "- Release: \`${RELEASE_APK}\`" >> $GITHUB_STEP_SUMMARY
-        echo "- 大小: $(du -h MBBridgeController/${RELEASE_APK} | cut -f1)" >> $GITHUB_STEP_SUMMARY
+        echo "- 大小: $(du -h ${RELEASE_APK} | cut -f1)" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
         echo "**📥 下载说明:**" >> $GITHUB_STEP_SUMMARY
         echo "1. 点击下方 Artifacts 区域的文件链接" >> $GITHUB_STEP_SUMMARY

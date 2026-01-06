@@ -34,7 +34,6 @@ GET http://127.0.0.1:27123/health
 
 ## 运行与测试
 ```bash
-cd MBBridgeController
 ./gradlew assembleDebug
 ./gradlew installDebug
 ```
@@ -60,7 +59,7 @@ X-MBBridge-Token: your_token
 
 ## 目录结构
 ```
-MBBridgeController/app/src/main/java/com/mbbridge/controller/
+app/src/main/java/com/mbbridge/controller/
 ├── MainActivity.kt
 ├── MainViewModel.kt
 ├── MBBridgeService.kt

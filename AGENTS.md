@@ -1,16 +1,11 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-- Root `app/` is a minimal Android app (BLE page turner demo). Source lives in `app/src/main/java/com/example/blepageturner`, resources in `app/src/main/res`.
-- `MBBridgeController/` is a separate, full Android app (HTTP bridge + Compose UI). Source lives in `MBBridgeController/app/src/main/java/com/mbbridge/controller`, resources in `MBBridgeController/app/src/main/res`.
-- Each app has its own Gradle wrapper and build scripts; run commands from the relevant directory.
+- `app/` contains the Android app (HTTP bridge + Compose UI). Source lives in `app/src/main/java/com/mbbridge/controller`, resources in `app/src/main/res`.
+- Gradle wrapper and build scripts live at repo root.
 
 ## Build, Test, and Development Commands
-Root app (from repo root):
-- `./gradlew :app:assembleDebug` — build debug APK.
-- `./gradlew :app:installDebug` — install to a connected device/emulator.
-
-MBBridgeController (from `MBBridgeController/`):
+From repo root:
 - `./gradlew assembleDebug` — build debug APK.
 - `./gradlew installDebug` — install to a connected device/emulator.
 - `./gradlew test` — run JVM unit tests.
@@ -33,4 +28,4 @@ MBBridgeController (from `MBBridgeController/`):
 - PRs should include: a brief description, testing notes (commands run), and screenshots or recordings for UI changes. Link related issues when applicable.
 
 ## Security & Configuration Tips
-- MBBridgeController listens on `127.0.0.1:27123` and supports optional `X-MBBridge-Token` auth. Avoid committing tokens or device-specific secrets.
+- App listens on `127.0.0.1` and supports optional `X-MBBridge-Token` auth. Avoid committing tokens or device-specific secrets.

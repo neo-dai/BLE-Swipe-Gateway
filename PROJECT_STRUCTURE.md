@@ -1,7 +1,7 @@
 # MBBridge Controller - 项目结构
 
 ```
-MBBridgeController/
+/
 ├── app/
 │   ├── src/main/
 │   │   ├── java/com/mbbridge/controller/
