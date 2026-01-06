@@ -76,13 +76,14 @@ fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
                 .padding(16.dp)
         ) {
             val isWide = maxWidth > 900.dp
+            val isExtraWide = maxWidth > 1100.dp
             if (isWide) {
                 Row(
                     modifier = Modifier.fillMaxSize(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(if (isExtraWide) 0.9f else 1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         ServerCard(
@@ -93,8 +94,6 @@ fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
                             onStart = viewModel::startServer,
                             onStop = viewModel::stopServer
                         )
-                        LastCommandCard(command = uiState.lastCommand)
-                        StatsCard(stats = uiState.stats)
                         SimulateCard(
                             onSimulatePrev = { viewModel.simulateCommand(CommandType.PREV) },
                             onSimulateNext = { viewModel.simulateCommand(CommandType.NEXT) }
@@ -106,16 +105,25 @@ fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
                         )
                     }
                     Column(
-                        modifier = Modifier.weight(1f),
+                        modifier = Modifier.weight(if (isExtraWide) 0.9f else 1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        LastCommandCard(command = uiState.lastCommand)
+                        StatsCard(stats = uiState.stats)
+                    }
+                    Column(
+                        modifier = Modifier.weight(if (isExtraWide) 1.2f else 1f),
                         verticalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         LogToggleCard(
                             enabled = uiState.logsEnabled,
                             onToggle = viewModel::setLogsEnabled
                         )
-                        if (uiState.logsEnabled) {
-                            LogCard(logs = uiState.logs, onClear = viewModel::clearLogs)
-                        }
+                        LogPanel(
+                            enabled = uiState.logsEnabled,
+                            logs = uiState.logs,
+                            onClear = viewModel::clearLogs
+                        )
                     }
                 }
             } else {
@@ -196,6 +204,12 @@ private fun ServerCard(
                 style = MaterialTheme.typography.headlineSmall,
                 color = if (isRunning) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.error
+            )
+            Spacer(modifier = Modifier.height(12.dp))
+            Text(
+                text = "监听地址: 127.0.0.1:${portText.ifBlank { "27123" }}",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
@@ -393,13 +407,41 @@ private fun LogCard(logs: List<String>, onClear: () -> Unit) {
                 )
             } else {
                 LazyColumn(
-                    modifier = Modifier.height(320.dp),
+                    modifier = Modifier.height(520.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
                     items(logs.take(200)) { log ->
                         Text(text = log, style = MaterialTheme.typography.bodySmall)
                     }
                 }
+            }
+        }
+    }
+}
+
+@Composable
+private fun LogPanel(
+    enabled: Boolean,
+    logs: List<String>,
+    onClear: () -> Unit
+) {
+    if (enabled) {
+        LogCard(logs = logs, onClear = onClear)
+    } else {
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(
+                modifier = Modifier.padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    text = "日志未开启",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = "打开日志开关后，将显示协议与关键交互日志。",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
