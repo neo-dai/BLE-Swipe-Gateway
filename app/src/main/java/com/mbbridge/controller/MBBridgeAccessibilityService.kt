@@ -30,8 +30,14 @@ class MBBridgeAccessibilityService : AccessibilityService() {
             }
             val side = intent.getStringExtra(TapAction.EXTRA_SIDE)
             when (side) {
-                TapAction.SIDE_LEFT -> performTap(isLeft = true)
-                TapAction.SIDE_RIGHT -> performTap(isLeft = false)
+                TapAction.SIDE_LEFT -> {
+                    Log.i(TAG, "Tap request: left")
+                    performTap(isLeft = true)
+                }
+                TapAction.SIDE_RIGHT -> {
+                    Log.i(TAG, "Tap request: right")
+                    performTap(isLeft = false)
+                }
                 else -> Log.w(TAG, "Unknown tap side: $side")
             }
         }
@@ -39,7 +45,12 @@ class MBBridgeAccessibilityService : AccessibilityService() {
 
     override fun onServiceConnected() {
         super.onServiceConnected()
-        registerReceiver(tapReceiver, IntentFilter(TapAction.ACTION_TAP))
+        val filter = IntentFilter(TapAction.ACTION_TAP)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            registerReceiver(tapReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+        } else {
+            registerReceiver(tapReceiver, filter)
+        }
         Log.i(TAG, "Accessibility service connected")
     }
 
@@ -53,7 +64,11 @@ class MBBridgeAccessibilityService : AccessibilityService() {
 
     override fun onDestroy() {
         super.onDestroy()
-        unregisterReceiver(tapReceiver)
+        try {
+            unregisterReceiver(tapReceiver)
+        } catch (e: Exception) {
+            Log.w(TAG, "Unregister receiver failed", e)
+        }
     }
 
     private fun performTap(isLeft: Boolean) {
