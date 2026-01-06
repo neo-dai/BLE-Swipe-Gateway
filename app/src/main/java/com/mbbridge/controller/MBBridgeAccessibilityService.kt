@@ -17,9 +17,9 @@ class MBBridgeAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "MBBridgeCtrl"
-        private const val TAP_DURATION_MS = 50L
-        private const val LEFT_RATIO = 0.25f
-        private const val RIGHT_RATIO = 0.75f
+        private const val TAP_DURATION_MS = 80L
+        private const val LEFT_RATIO = 0.18f
+        private const val RIGHT_RATIO = 0.82f
         private const val CENTER_Y_RATIO = 0.5f
     }
 
@@ -78,14 +78,29 @@ class MBBridgeAccessibilityService : AccessibilityService() {
             return
         }
         val bounds = getScreenBounds()
-        val x = (bounds.width() * if (isLeft) LEFT_RATIO else RIGHT_RATIO).toInt()
-        val y = (bounds.height() * CENTER_Y_RATIO).toInt()
+        val width = bounds.width()
+        val height = bounds.height()
+        val x = (bounds.left + width * if (isLeft) LEFT_RATIO else RIGHT_RATIO).toInt()
+        val y = (bounds.top + height * CENTER_Y_RATIO).toInt()
         val path = Path().apply { moveTo(x.toFloat(), y.toFloat()) }
         val gesture = GestureDescription.Builder()
             .addStroke(GestureDescription.StrokeDescription(path, 0, TAP_DURATION_MS))
             .build()
         val label = if (isLeft) "left" else "right"
-        val dispatched = dispatchGesture(gesture, null, null)
+        Log.i(TAG, "Tap target pkg=${currentPackage ?: "unknown"} bounds=$bounds")
+        val dispatched = dispatchGesture(
+            gesture,
+            object : GestureResultCallback() {
+                override fun onCompleted(gestureDescription: GestureDescription?) {
+                    Log.i(TAG, "Gesture completed: $label")
+                }
+
+                override fun onCancelled(gestureDescription: GestureDescription?) {
+                    Log.w(TAG, "Gesture cancelled: $label")
+                }
+            },
+            null
+        )
         Log.i(TAG, "Dispatch tap $label at x=$x y=$y result=$dispatched")
         sendTapResult(label, dispatched, x, y)
     }
