@@ -72,6 +72,11 @@ class MBBridgeAccessibilityService : AccessibilityService() {
     }
 
     private fun performTap(isLeft: Boolean) {
+        val currentPackage = rootInActiveWindow?.packageName?.toString()
+        if (currentPackage == packageName) {
+            Log.i(TAG, "Skip tap: MBBridgeController is foreground")
+            return
+        }
         val bounds = getScreenBounds()
         val x = (bounds.width() * if (isLeft) LEFT_RATIO else RIGHT_RATIO).toInt()
         val y = (bounds.height() * CENTER_Y_RATIO).toInt()
