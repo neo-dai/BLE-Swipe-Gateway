@@ -1,0 +1,27 @@
+<resources>
+    <string name="app_name">MBBridge Controller</string>
+    <string name="channel_name">MBBridge Service</string>
+    <string name="channel_description">Foreground service for HTTP command server</string>
+    <string name="notification_title">MBBridge Server</string>
+    <string name="notification_text">Listening on 127.0.0.1:27123</string>
+    <string name="start_server">启动服务器</string>
+    <string name="stop_server">停止服务器</string>
+    <string name="server_status">服务器状态</string>
+    <string name="server_running">运行中</string>
+    <string name="server_stopped">已停止</string>
+    <string name="last_command">最近命令</string>
+    <string name="no_command">暂无命令</string>
+    <string name="stats">统计信息</string>
+    <string name="prev_count">PREV 次数: %d</string>
+    <string name="next_count">NEXT 次数: %d</string>
+    <string name="total_count">总次数: %d</string>
+    <string name="simulate">模拟测试</string>
+    <string name="simulate_prev">模拟 PREV</string>
+    <string name="simulate_next">模拟 NEXT</string>
+    <string name="accessibility_settings">无障碍设置</string>
+    <string name="open_accessibility">打开无障碍设置</string>
+    <string name="token_settings">Token 设置</string>
+    <string name="save_token">保存</string>
+    <string name="token_hint">留空表示不校验 token</string>
+    <string name="clear_logs">清空日志</string>
+</resources>
