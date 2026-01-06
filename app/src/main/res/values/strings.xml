@@ -1,10 +1,4 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
-    <string name="app_name">HelloWorldDemo</string>
-    <string name="hello_world">Hello world!</string>
-    <string name="menu_settings">Settings</string>
-
-    <string name="a11y_service_description">BLE 小说翻页器：接收手环广播并在屏幕左右边缘模拟点击翻页</string>
-
+    <string name="app_name">HelloWorld</string>
 </resources>

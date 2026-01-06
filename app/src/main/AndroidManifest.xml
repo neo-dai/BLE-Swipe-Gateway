@@ -2,28 +2,9 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="com.example.blepageturner">
 
-    <!-- Android 12 以下（<=30）传统蓝牙权限 -->
-    <uses-permission
-        android:name="android.permission.BLUETOOTH"
-        android:maxSdkVersion="30" />
-    <uses-permission
-        android:name="android.permission.BLUETOOTH_ADMIN"
-        android:maxSdkVersion="30" />
-
-    <!-- 扫描结果在很多机型/系统版本上仍受“定位权限 + 定位开关”影响（本项目 targetSdk=30 时尤甚） -->
-    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
-
-    <!-- Android 12+：蓝牙运行时权限（名称直接写字符串即可） -->
-    <uses-permission android:name="android.permission.BLUETOOTH_SCAN" />
-    <uses-permission android:name="android.permission.BLUETOOTH_CONNECT" />
-
-    <!-- 前台服务与通知 -->
-    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
-    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
-
     <application
-        android:allowBackup="false"
-        android:label="BLE Page Turner"
+        android:allowBackup="true"
+        android:label="HelloWorld"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/AppTheme">
 
@@ -36,26 +17,6 @@
             </intent-filter>
         </activity>
 
-        <activity
-            android:name=".LogActivity"
-            android:exported="false" />
-
-        <service
-            android:name=".PageTurnerService"
-            android:exported="false" />
-
-        <service
-            android:name=".ClickAccessibilityService"
-            android:exported="false"
-            android:permission="android.permission.BIND_ACCESSIBILITY_SERVICE">
-            <intent-filter>
-                <action android:name="android.accessibilityservice.AccessibilityService" />
-            </intent-filter>
-
-            <meta-data
-                android:name="android.accessibilityservice"
-                android:resource="@xml/accessibility_config" />
-        </service>
     </application>
 
 </manifest>
