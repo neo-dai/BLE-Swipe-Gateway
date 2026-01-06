@@ -21,7 +21,9 @@ data class UiState(
     val lastCommand: Command? = null,
     val stats: CommandStats = CommandStats(),
     val logs: List<String> = emptyList(),
-    val token: String = ""
+    val token: String = "",
+    val portText: String = "",
+    val logsEnabled: Boolean = false
 )
 
 class MainViewModel(application: Application) : AndroidViewModel(application),
@@ -35,8 +37,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
 
     private val context: Context = application.applicationContext
     private val tokenStore = TokenStore(context)
+    private val portStore = PortStore(context)
 
-    private val _uiState = MutableStateFlow(UiState(token = tokenStore.getToken() ?: ""))
+    private val _uiState = MutableStateFlow(
+        UiState(
+            token = tokenStore.getToken() ?: "",
+            portText = portStore.getPort().toString()
+        )
+    )
     val uiState: StateFlow<UiState> = _uiState.asStateFlow()
 
     private var service: MBBridgeService? = null
@@ -62,6 +70,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     }
 
     fun startServer() {
+        applyPortIfValid()
         MBBridgeService.startService(context)
         viewModelScope.launch {
             delay(300)
@@ -92,6 +101,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
         _uiState.value = _uiState.value.copy(token = token)
     }
 
+    fun updatePortText(value: String) {
+        _uiState.value = _uiState.value.copy(portText = value)
+    }
+
+    fun applyPort() {
+        applyPortIfValid()
+    }
+
+    fun setLogsEnabled(enabled: Boolean) {
+        _uiState.value = _uiState.value.copy(logsEnabled = enabled)
+    }
+
     fun openAccessibilitySettings() {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS).apply {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -108,7 +129,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
             val current = _uiState.value
             val updatedStats = current.stats.increment(command.getCommandType())
             val logEntry = buildLogEntry(command)
-            val newLogs = (listOf(logEntry) + current.logs).take(MAX_LOGS)
+            val newLogs = if (current.logsEnabled) {
+                (listOf(logEntry) + current.logs).take(MAX_LOGS)
+            } else {
+                current.logs
+            }
             _uiState.value = current.copy(
                 lastCommand = command,
                 stats = updatedStats,
@@ -119,9 +144,12 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     }
 
     override fun onLog(level: LogLevel, message: String) {
+        val current = _uiState.value
+        if (!current.logsEnabled) {
+            return
+        }
         val timestamp = android.text.format.DateFormat.format("HH:mm:ss", System.currentTimeMillis())
         val entry = "[$timestamp] [${level.name}] $message"
-        val current = _uiState.value
         _uiState.value = current.copy(logs = (listOf(entry) + current.logs).take(MAX_LOGS))
     }
 
@@ -145,5 +173,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     private fun buildLogEntry(command: Command): String {
         val timestamp = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", command.ts)
         return "[$timestamp] ${command.getCommandType()} v=${command.v} source=${command.source}"
+    }
+
+    private fun applyPortIfValid() {
+        val text = _uiState.value.portText.trim()
+        val port = text.toIntOrNull()
+        if (port == null || port !in 1024..65535) {
+            Log.w(TAG, "Invalid port: $text")
+            return
+        }
+        portStore.savePort(port)
+        service?.setPort(port)
     }
 }

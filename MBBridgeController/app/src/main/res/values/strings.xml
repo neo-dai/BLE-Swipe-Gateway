@@ -3,7 +3,7 @@
     <string name="channel_name">MBBridge Service</string>
     <string name="channel_description">Foreground service for HTTP command server</string>
     <string name="notification_title">MBBridge Server</string>
-    <string name="notification_text">Listening on 127.0.0.1:27123</string>
+    <string name="notification_text">Listening on 127.0.0.1:%1$d</string>
     <string name="start_server">启动服务器</string>
     <string name="stop_server">停止服务器</string>
     <string name="server_status">服务器状态</string>
@@ -23,6 +23,12 @@
     <string name="token_settings">Token 设置</string>
     <string name="save_token">保存</string>
     <string name="token_hint">留空表示不校验 token</string>
+    <string name="port_settings">服务端口</string>
+    <string name="port_hint">例如 27123</string>
+    <string name="apply_port">应用端口</string>
+    <string name="log_toggle">日志开关</string>
+    <string name="log_on">已开启</string>
+    <string name="log_off">已关闭</string>
     <string name="log_title">日志</string>
     <string name="no_logs">暂无日志</string>
     <string name="clear_logs">清空日志</string>

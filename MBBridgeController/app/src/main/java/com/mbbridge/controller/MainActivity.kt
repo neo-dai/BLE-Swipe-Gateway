@@ -5,6 +5,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -22,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -67,41 +69,92 @@ fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
             )
         }
     ) { padding ->
-        LazyColumn(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(16.dp)
         ) {
-            item {
-                ServerCard(
-                    isRunning = uiState.isServerRunning,
-                    onStart = viewModel::startServer,
-                    onStop = viewModel::stopServer
-                )
-            }
-            item {
-                LastCommandCard(command = uiState.lastCommand)
-            }
-            item {
-                StatsCard(stats = uiState.stats)
-            }
-            item {
-                SimulateCard(
-                    onSimulatePrev = { viewModel.simulateCommand(CommandType.PREV) },
-                    onSimulateNext = { viewModel.simulateCommand(CommandType.NEXT) }
-                )
-            }
-            item {
-                SettingsCard(
-                    token = uiState.token,
-                    onSaveToken = viewModel::saveToken,
-                    onOpenAccessibility = viewModel::openAccessibilitySettings
-                )
-            }
-            item {
-                LogCard(logs = uiState.logs, onClear = viewModel::clearLogs)
+            val isWide = maxWidth > 900.dp
+            if (isWide) {
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        ServerCard(
+                            isRunning = uiState.isServerRunning,
+                            portText = uiState.portText,
+                            onPortChange = viewModel::updatePortText,
+                            onApplyPort = viewModel::applyPort,
+                            onStart = viewModel::startServer,
+                            onStop = viewModel::stopServer
+                        )
+                        LastCommandCard(command = uiState.lastCommand)
+                        StatsCard(stats = uiState.stats)
+                        SimulateCard(
+                            onSimulatePrev = { viewModel.simulateCommand(CommandType.PREV) },
+                            onSimulateNext = { viewModel.simulateCommand(CommandType.NEXT) }
+                        )
+                        SettingsCard(
+                            token = uiState.token,
+                            onSaveToken = viewModel::saveToken,
+                            onOpenAccessibility = viewModel::openAccessibilitySettings
+                        )
+                    }
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        LogToggleCard(
+                            enabled = uiState.logsEnabled,
+                            onToggle = viewModel::setLogsEnabled
+                        )
+                        if (uiState.logsEnabled) {
+                            LogCard(logs = uiState.logs, onClear = viewModel::clearLogs)
+                        }
+                    }
+                }
+            } else {
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    item {
+                        ServerCard(
+                            isRunning = uiState.isServerRunning,
+                            portText = uiState.portText,
+                            onPortChange = viewModel::updatePortText,
+                            onApplyPort = viewModel::applyPort,
+                            onStart = viewModel::startServer,
+                            onStop = viewModel::stopServer
+                        )
+                    }
+                    item { LastCommandCard(command = uiState.lastCommand) }
+                    item { StatsCard(stats = uiState.stats) }
+                    item {
+                        SimulateCard(
+                            onSimulatePrev = { viewModel.simulateCommand(CommandType.PREV) },
+                            onSimulateNext = { viewModel.simulateCommand(CommandType.NEXT) }
+                        )
+                    }
+                    item {
+                        SettingsCard(
+                            token = uiState.token,
+                            onSaveToken = viewModel::saveToken,
+                            onOpenAccessibility = viewModel::openAccessibilitySettings
+                        )
+                    }
+                    item {
+                        LogToggleCard(
+                            enabled = uiState.logsEnabled,
+                            onToggle = viewModel::setLogsEnabled
+                        )
+                    }
+                    if (uiState.logsEnabled) {
+                        item { LogCard(logs = uiState.logs, onClear = viewModel::clearLogs) }
+                    }
+                }
             }
         }
     }
@@ -110,6 +163,9 @@ fun MBBridgeScreen(viewModel: MainViewModel = viewModel()) {
 @Composable
 private fun ServerCard(
     isRunning: Boolean,
+    portText: String,
+    onPortChange: (String) -> Unit,
+    onApplyPort: () -> Unit,
     onStart: () -> Unit,
     onStop: () -> Unit
 ) {
@@ -141,6 +197,22 @@ private fun ServerCard(
                 color = if (isRunning) MaterialTheme.colorScheme.primary
                 else MaterialTheme.colorScheme.error
             )
+            Spacer(modifier = Modifier.height(12.dp))
+            OutlinedTextField(
+                value = portText,
+                onValueChange = onPortChange,
+                label = { Text(context.getString(R.string.port_settings)) },
+                placeholder = { Text(context.getString(R.string.port_hint)) },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = onApplyPort,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Text(context.getString(R.string.apply_port))
+            }
             Spacer(modifier = Modifier.height(12.dp))
             Button(
                 onClick = if (isRunning) onStop else onStart,
@@ -320,12 +392,46 @@ private fun LogCard(logs: List<String>, onClear: () -> Unit) {
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                    logs.take(20).forEach { log ->
+                LazyColumn(
+                    modifier = Modifier.height(320.dp),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    items(logs.take(200)) { log ->
                         Text(text = log, style = MaterialTheme.typography.bodySmall)
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun LogToggleCard(
+    enabled: Boolean,
+    onToggle: (Boolean) -> Unit
+) {
+    val context = LocalContext.current
+    Card(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column {
+                Text(
+                    text = context.getString(R.string.log_toggle),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold
+                )
+                Text(
+                    text = if (enabled) context.getString(R.string.log_on)
+                    else context.getString(R.string.log_off),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            Switch(checked = enabled, onCheckedChange = onToggle)
         }
     }
 }

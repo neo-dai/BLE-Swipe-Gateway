@@ -11,13 +11,13 @@ import java.util.concurrent.atomic.AtomicBoolean
  */
 class MBBridgeHttpServer(
     private val context: Context,
-    port: Int = PORT
+    private val port: Int = DEFAULT_PORT
 ) : NanoHTTPD(HOST, port) {
 
     companion object {
         private const val TAG = "MBBridgeCtrl"
         const val HOST = "127.0.0.1"
-        const val PORT = 27123
+        const val DEFAULT_PORT = 27123
     }
 
     private val running = AtomicBoolean(false)
@@ -106,7 +106,7 @@ class MBBridgeHttpServer(
         return try {
             start(NanoHTTPD.SOCKET_READ_TIMEOUT, false)
             running.set(true)
-            log(LogLevel.INFO, "HTTP server started on $HOST:$PORT")
+            log(LogLevel.INFO, "HTTP server started on $HOST:$port")
             true
         } catch (e: Exception) {
             log(LogLevel.ERROR, "Start server failed: ${e.message}")

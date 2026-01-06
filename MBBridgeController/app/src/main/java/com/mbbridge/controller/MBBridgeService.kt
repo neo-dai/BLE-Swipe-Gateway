@@ -47,6 +47,10 @@ class MBBridgeService : Service() {
 
     private val binder = LocalBinder()
     private var httpServer: MBBridgeHttpServer? = null
+    private var serverPort: Int = MBBridgeHttpServer.DEFAULT_PORT
+    private var commandListener: MBBridgeHttpServer.CommandListener? = null
+    private var logListener: MBBridgeHttpServer.LogListener? = null
+    private val portStore by lazy { PortStore(this) }
 
     inner class LocalBinder : Binder() {
         fun getService(): MBBridgeService = this@MBBridgeService
@@ -61,6 +65,7 @@ class MBBridgeService : Service() {
      * 设置命令监听器
      */
     fun setCommandListener(listener: MBBridgeHttpServer.CommandListener?) {
+        commandListener = listener
         httpServer?.setCommandListener(listener)
     }
 
@@ -68,21 +73,44 @@ class MBBridgeService : Service() {
      * 设置日志监听器
      */
     fun setLogListener(listener: MBBridgeHttpServer.LogListener?) {
+        logListener = listener
         httpServer?.setLogListener(listener)
+    }
+
+    fun setPort(port: Int) {
+        if (port == serverPort) {
+            return
+        }
+        val wasRunning = isServerRunning()
+        stopHttpServer()
+        serverPort = port
+        httpServer = MBBridgeHttpServer(this, port).also {
+            it.setCommandListener(commandListener)
+            it.setLogListener(logListener)
+        }
+        if (wasRunning) {
+            startForeground(NOTIFICATION_ID, createNotification(port))
+            startHttpServer()
+        }
     }
 
     override fun onCreate() {
         super.onCreate()
         Log.i(TAG, "MBBridgeService created")
         createNotificationChannel()
-        httpServer = MBBridgeHttpServer(this)
+        serverPort = portStore.getPort()
+        httpServer = MBBridgeHttpServer(this, serverPort)
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         when (intent?.action) {
             ACTION_START -> {
                 Log.i(TAG, "Start command received")
-                startForeground(NOTIFICATION_ID, createNotification())
+                val desiredPort = portStore.getPort()
+                if (desiredPort != serverPort) {
+                    setPort(desiredPort)
+                }
+                startForeground(NOTIFICATION_ID, createNotification(serverPort))
                 startHttpServer()
             }
             ACTION_STOP -> {
@@ -129,7 +157,7 @@ class MBBridgeService : Service() {
     /**
      * 创建前台通知
      */
-    private fun createNotification(): Notification {
+    private fun createNotification(port: Int): Notification {
         val notificationIntent = Intent(this, MainActivity::class.java)
         val pendingIntent = PendingIntent.getActivity(
             this,
@@ -140,7 +168,7 @@ class MBBridgeService : Service() {
 
         return NotificationCompat.Builder(this, CHANNEL_ID)
             .setContentTitle(getString(R.string.notification_title))
-            .setContentText(getString(R.string.notification_text))
+            .setContentText(getString(R.string.notification_text, port))
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setContentIntent(pendingIntent)
             .setOngoing(true)

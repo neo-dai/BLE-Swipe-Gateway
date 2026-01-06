@@ -114,3 +114,23 @@ class TokenStore(private val context: Context) {
         return expected == provided
     }
 }
+
+class PortStore(private val context: Context) {
+    companion object {
+        private const val PREFS_NAME = "mbbridge_prefs"
+        private const val KEY_PORT = "server_port"
+        private const val DEFAULT_PORT = 27123
+    }
+
+    fun getPort(): Int {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getInt(KEY_PORT, DEFAULT_PORT)
+    }
+
+    fun savePort(port: Int) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putInt(KEY_PORT, port)
+            .apply()
+    }
+}
