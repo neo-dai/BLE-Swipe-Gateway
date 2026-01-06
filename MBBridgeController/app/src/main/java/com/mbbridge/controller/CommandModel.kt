@@ -1,25 +1,13 @@
 package com.mbbridge.controller
 
+import android.content.Context
+import android.util.Log
 import org.json.JSONObject
 
-/**
- * 命令数据模型
- *
- * JSON 格式：
- * {
- *   "v": 1,
- *   "ts": 1730000000000,
- *   "source": "mbbridge"
- * }
- *
- * v 含义：
- * - 1 = PREV（手环 0x01）
- * - 2 = NEXT（手环 0x02）
- */
 data class Command(
-    val v: Int,           // 命令类型：1=PREV, 2=NEXT
-    val ts: Long,         // 时间戳（毫秒）
-    val source: String    // 来源标识
+    val v: Int,
+    val ts: Long,
+    val source: String
 ) {
     companion object {
         private const val TAG = "MBBridgeCtrl"
@@ -33,26 +21,16 @@ data class Command(
                     source = json.getString("source")
                 )
             } catch (e: Exception) {
-                android.util.Log.e(TAG, "Failed to parse command JSON", e)
+                Log.e(TAG, "Parse command JSON failed", e)
                 null
             }
         }
     }
 
-    fun getCommandType(): CommandType {
-        return when (v) {
-            1 -> CommandType.PREV
-            2 -> CommandType.NEXT
-            else -> CommandType.UNKNOWN(v)
-        }
-    }
-
-    fun toJson(): String {
-        return JSONObject().apply {
-            put("v", v)
-            put("ts", ts)
-            put("source", source)
-        }.toString()
+    fun getCommandType(): CommandType = when (v) {
+        1 -> CommandType.PREV
+        2 -> CommandType.NEXT
+        else -> CommandType.UNKNOWN(v)
     }
 }
 
@@ -61,18 +39,13 @@ sealed class CommandType {
     object NEXT : CommandType()
     data class UNKNOWN(val value: Int) : CommandType()
 
-    override fun toString(): String {
-        return when (this) {
-            is PREV -> "PREV"
-            is NEXT -> "NEXT"
-            is UNKNOWN -> "UNKNOWN($value)"
-        }
+    override fun toString(): String = when (this) {
+        is PREV -> "PREV"
+        is NEXT -> "NEXT"
+        is UNKNOWN -> "UNKNOWN($value)"
     }
 }
 
-/**
- * HTTP 响应模型
- */
 data class HttpResponse(
     val ok: Int,
     val err: String? = null,
@@ -92,37 +65,52 @@ data class HttpResponse(
     }
 }
 
-/**
- * 统计数据
- */
 data class CommandStats(
-    var prevCount: Int = 0,
-    var nextCount: Int = 0,
-    var totalCount: Int = 0
+    val prevCount: Int = 0,
+    val nextCount: Int = 0,
+    val totalCount: Int = 0
 ) {
-    fun increment(commandType: CommandType) {
-        when (commandType) {
-            is CommandType.PREV -> prevCount++
-            is CommandType.NEXT -> nextCount++
-            is CommandType.UNKNOWN -> {} // 未知命令不计数
+    fun increment(commandType: CommandType): CommandStats {
+        return when (commandType) {
+            is CommandType.PREV -> copy(prevCount = prevCount + 1, totalCount = totalCount + 1)
+            is CommandType.NEXT -> copy(nextCount = nextCount + 1, totalCount = totalCount + 1)
+            is CommandType.UNKNOWN -> copy(totalCount = totalCount + 1)
         }
-        totalCount++
-    }
-
-    fun reset() {
-        prevCount = 0
-        nextCount = 0
-        totalCount = 0
     }
 }
 
-/**
- * 日志级别
- */
 enum class LogLevel {
     VERBOSE,
     DEBUG,
     INFO,
     WARN,
     ERROR
+}
+
+class TokenStore(private val context: Context) {
+    companion object {
+        private const val PREFS_NAME = "mbbridge_prefs"
+        private const val KEY_TOKEN = "auth_token"
+        private const val TAG = "MBBridgeCtrl"
+    }
+
+    fun getToken(): String? {
+        return context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .getString(KEY_TOKEN, null)
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    fun saveToken(token: String) {
+        context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+            .edit()
+            .putString(KEY_TOKEN, token.trim())
+            .apply()
+        Log.i(TAG, "Token updated")
+    }
+
+    fun verify(headers: Map<String, String>): Boolean {
+        val expected = getToken() ?: return true
+        val provided = headers["x-mbbridge-token"] ?: headers["X-MBBridge-Token"]
+        return expected == provided
+    }
 }

@@ -47,7 +47,6 @@ class MBBridgeService : Service() {
 
     private val binder = LocalBinder()
     private var httpServer: MBBridgeHttpServer? = null
-    private var isRunning = false
 
     inner class LocalBinder : Binder() {
         fun getService(): MBBridgeService = this@MBBridgeService
@@ -56,7 +55,7 @@ class MBBridgeService : Service() {
     /**
      * 获取服务器状态
      */
-    fun isServerRunning(): Boolean = isRunning
+    fun isServerRunning(): Boolean = httpServer?.isRunning() == true
 
     /**
      * 设置命令监听器
@@ -83,6 +82,7 @@ class MBBridgeService : Service() {
         when (intent?.action) {
             ACTION_START -> {
                 Log.i(TAG, "Start command received")
+                startForeground(NOTIFICATION_ID, createNotification())
                 startHttpServer()
             }
             ACTION_STOP -> {
@@ -151,22 +151,24 @@ class MBBridgeService : Service() {
      * 启动 HTTP 服务器
      */
     private fun startHttpServer() {
-        if (isRunning) {
+        if (httpServer?.isRunning() == true) {
             Log.w(TAG, "Server already running")
             return
         }
 
         val server = httpServer ?: run {
             Log.e(TAG, "HTTP server not initialized")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
             return
         }
 
         if (server.startServer()) {
-            isRunning = true
-            startForeground(NOTIFICATION_ID, createNotification())
             Log.i(TAG, "HTTP server started successfully")
         } else {
             Log.e(TAG, "Failed to start HTTP server")
+            stopForeground(STOP_FOREGROUND_REMOVE)
+            stopSelf()
         }
     }
 
@@ -174,12 +176,11 @@ class MBBridgeService : Service() {
      * 停止 HTTP 服务器
      */
     private fun stopHttpServer() {
-        if (!isRunning) {
+        if (httpServer?.isRunning() != true) {
             return
         }
 
         httpServer?.stopServer()
-        isRunning = false
         stopForeground(STOP_FOREGROUND_REMOVE)
         Log.i(TAG, "HTTP server stopped")
     }
