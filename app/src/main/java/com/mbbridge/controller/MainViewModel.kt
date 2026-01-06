@@ -141,6 +141,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
             )
             Log.i(TAG, "Command received: ${command.getCommandType()}")
         }
+        requestTap(command.getCommandType())
     }
 
     override fun onLog(level: LogLevel, message: String) {
@@ -184,5 +185,18 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
         }
         portStore.savePort(port)
         service?.setPort(port)
+    }
+
+    private fun requestTap(type: CommandType) {
+        val side = when (type) {
+            is CommandType.PREV -> TapAction.SIDE_LEFT
+            is CommandType.NEXT -> TapAction.SIDE_RIGHT
+            is CommandType.UNKNOWN -> null
+        } ?: return
+        val intent = Intent(TapAction.ACTION_TAP).apply {
+            setPackage(context.packageName)
+            putExtra(TapAction.EXTRA_SIDE, side)
+        }
+        context.sendBroadcast(intent)
     }
 }

@@ -87,6 +87,13 @@ enum class LogLevel {
     ERROR
 }
 
+object TapAction {
+    const val ACTION_TAP = "com.mbbridge.controller.ACTION_TAP"
+    const val EXTRA_SIDE = "side"
+    const val SIDE_LEFT = "left"
+    const val SIDE_RIGHT = "right"
+}
+
 class TokenStore(private val context: Context) {
     companion object {
         private const val PREFS_NAME = "mbbridge_prefs"
