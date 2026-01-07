@@ -94,6 +94,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
             source = "simulate"
         )
         onCommandReceived(command)
+        requestTap(type)
     }
 
     fun saveToken(token: String) {
@@ -141,7 +142,6 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
             )
             Log.i(TAG, "Command received: ${command.getCommandType()}")
         }
-        requestTap(command.getCommandType())
     }
 
     override fun onLog(level: LogLevel, message: String) {

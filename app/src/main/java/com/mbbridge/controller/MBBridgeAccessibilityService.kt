@@ -17,7 +17,8 @@ class MBBridgeAccessibilityService : AccessibilityService() {
 
     companion object {
         private const val TAG = "MBBridgeCtrl"
-        private const val TAP_DURATION_MS = 80L
+        private const val LOG_ENABLED = false
+        private const val TAP_DURATION_MS = 10L
         private const val LEFT_RATIO = 0.18f
         private const val RIGHT_RATIO = 0.82f
         private const val CENTER_Y_RATIO = 0.5f
@@ -31,14 +32,14 @@ class MBBridgeAccessibilityService : AccessibilityService() {
             val side = intent.getStringExtra(TapAction.EXTRA_SIDE)
             when (side) {
                 TapAction.SIDE_LEFT -> {
-                    Log.i(TAG, "Tap request: left")
+                    if (LOG_ENABLED) Log.i(TAG, "Tap request: left")
                     performTap(isLeft = true)
                 }
                 TapAction.SIDE_RIGHT -> {
-                    Log.i(TAG, "Tap request: right")
+                    if (LOG_ENABLED) Log.i(TAG, "Tap request: right")
                     performTap(isLeft = false)
                 }
-                else -> Log.w(TAG, "Unknown tap side: $side")
+                else -> if (LOG_ENABLED) Log.w(TAG, "Unknown tap side: $side")
             }
         }
     }
@@ -51,7 +52,7 @@ class MBBridgeAccessibilityService : AccessibilityService() {
         } else {
             registerReceiver(tapReceiver, filter)
         }
-        Log.i(TAG, "Accessibility service connected")
+        if (LOG_ENABLED) Log.i(TAG, "Accessibility service connected")
     }
 
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
@@ -67,16 +68,11 @@ class MBBridgeAccessibilityService : AccessibilityService() {
         try {
             unregisterReceiver(tapReceiver)
         } catch (e: Exception) {
-            Log.w(TAG, "Unregister receiver failed", e)
+            if (LOG_ENABLED) Log.w(TAG, "Unregister receiver failed", e)
         }
     }
 
     private fun performTap(isLeft: Boolean) {
-        val currentPackage = rootInActiveWindow?.packageName?.toString()
-        if (currentPackage == packageName) {
-            Log.i(TAG, "Skip tap: MBBridgeController is foreground")
-            return
-        }
         val bounds = getScreenBounds()
         val width = bounds.width()
         val height = bounds.height()
@@ -87,21 +83,20 @@ class MBBridgeAccessibilityService : AccessibilityService() {
             .addStroke(GestureDescription.StrokeDescription(path, 0, TAP_DURATION_MS))
             .build()
         val label = if (isLeft) "left" else "right"
-        Log.i(TAG, "Tap target pkg=${currentPackage ?: "unknown"} bounds=$bounds")
         val dispatched = dispatchGesture(
             gesture,
             object : GestureResultCallback() {
                 override fun onCompleted(gestureDescription: GestureDescription?) {
-                    Log.i(TAG, "Gesture completed: $label")
+                    if (LOG_ENABLED) Log.i(TAG, "Gesture completed: $label")
                 }
 
                 override fun onCancelled(gestureDescription: GestureDescription?) {
-                    Log.w(TAG, "Gesture cancelled: $label")
+                    if (LOG_ENABLED) Log.w(TAG, "Gesture cancelled: $label")
                 }
             },
             null
         )
-        Log.i(TAG, "Dispatch tap $label at x=$x y=$y result=$dispatched")
+        if (LOG_ENABLED) Log.i(TAG, "Dispatch tap $label at x=$x y=$y result=$dispatched")
         sendTapResult(label, dispatched, x, y)
     }
 

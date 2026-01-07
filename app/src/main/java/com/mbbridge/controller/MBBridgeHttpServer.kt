@@ -1,6 +1,7 @@
 package com.mbbridge.controller
 
 import android.content.Context
+import android.content.Intent
 import android.util.Log
 import fi.iki.elonen.NanoHTTPD
 import java.util.concurrent.atomic.AtomicBoolean
@@ -80,6 +81,7 @@ class MBBridgeHttpServer(
         val command = Command.fromBytes(body)
             ?: return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Invalid binary"))
 
+        dispatchTap(command)
         commandListener?.onCommandReceived(command)
         log(LogLevel.INFO, "Command: ${command.getCommandType()} v=${command.v}")
         return binaryResponse(Response.Status.OK, byteArrayOf(1))
@@ -112,6 +114,19 @@ class MBBridgeHttpServer(
 
     private fun binaryResponse(status: Response.Status, body: ByteArray): Response {
         return newFixedLengthResponse(status, "application/octet-stream", body.inputStream(), body.size.toLong())
+    }
+
+    private fun dispatchTap(command: Command) {
+        val side = when (command.getCommandType()) {
+            is CommandType.PREV -> TapAction.SIDE_LEFT
+            is CommandType.NEXT -> TapAction.SIDE_RIGHT
+            is CommandType.UNKNOWN -> null
+        } ?: return
+        val intent = Intent(TapAction.ACTION_TAP).apply {
+            setPackage(context.packageName)
+            putExtra(TapAction.EXTRA_SIDE, side)
+        }
+        context.sendBroadcast(intent)
     }
 
     fun startServer(): Boolean {
