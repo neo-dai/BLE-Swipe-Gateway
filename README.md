@@ -16,12 +16,14 @@
 
 ## 命令协议
 `POST http://127.0.0.1:27123/cmd`
-```json
-{ "v": 1, "ts": 1730000000000, "source": "mbbridge" }
 ```
-- `v`: 1 = PREV, 2 = NEXT
-- 成功：`{ "ok": 1 }`
-- 失败：`{ "ok": 0, "err": "..." }`
+body: 1 byte
+0x01 = PREV
+0x02 = NEXT
+```
+- Content-Type: `application/octet-stream`
+- 成功：响应 body 为单字节 `0x01`
+- 失败：HTTP 4xx/5xx + JSON 错误信息
 
 健康检查：
 ```bash
@@ -43,9 +45,8 @@ GET http://127.0.0.1:27123/health
 
 ### ADB 测试
 ```bash
-adb shell curl -X POST http://127.0.0.1:27123/cmd \
-  -H "Content-Type: application/json" \
-  -d '{"v":1,"ts":1730000000000,"source":"test"}'
+adb shell 'printf "\x01" | curl -s -X POST http://127.0.0.1:27123/cmd \
+  -H "Content-Type: application/octet-stream" --data-binary @-'
 
 adb shell curl http://127.0.0.1:27123/health
 ```

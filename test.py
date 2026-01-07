@@ -16,7 +16,6 @@ python3 test.py
 """
 
 import requests
-import json
 import time
 import sys
 
@@ -65,23 +64,16 @@ def test_prev_command():
     """测试 PREV 命令"""
     print_test("2. 测试 PREV 命令...")
     try:
-        data = {
-            "v": 1,
-            "ts": int(time.time() * 1000),
-            "source": "python_test"
-        }
         response = requests.post(
             f"{BASE_URL}/cmd",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data),
+            headers={"Content-Type": "application/octet-stream"},
+            data=bytes([1]),
             timeout=2
         )
-        result = response.json()
+        print("请求: v=1")
+        print(f"HTTP: {response.status_code}")
 
-        print(f"请求: {json.dumps(data)}")
-        print(f"响应: {json.dumps(result)}")
-
-        if result.get('ok') == 1:
+        if response.status_code == 200:
             print_success("PREV 命令成功")
             return True
         else:
@@ -95,23 +87,16 @@ def test_next_command():
     """测试 NEXT 命令"""
     print_test("3. 测试 NEXT 命令...")
     try:
-        data = {
-            "v": 2,
-            "ts": int(time.time() * 1000),
-            "source": "python_test"
-        }
         response = requests.post(
             f"{BASE_URL}/cmd",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data),
+            headers={"Content-Type": "application/octet-stream"},
+            data=bytes([2]),
             timeout=2
         )
-        result = response.json()
+        print("请求: v=2")
+        print(f"HTTP: {response.status_code}")
 
-        print(f"请求: {json.dumps(data)}")
-        print(f"响应: {json.dumps(result)}")
-
-        if result.get('ok') == 1:
+        if response.status_code == 200:
             print_success("NEXT 命令成功")
             return True
         else:
@@ -125,19 +110,16 @@ def test_invalid_format():
     """测试错误格式"""
     print_test("4. 测试错误格式...")
     try:
-        data = {"invalid": "data"}
         response = requests.post(
             f"{BASE_URL}/cmd",
-            headers={"Content-Type": "application/json"},
-            data=json.dumps(data),
+            headers={"Content-Type": "application/octet-stream"},
+            data=b"",
             timeout=2
         )
-        result = response.json()
+        print("请求: empty body")
+        print(f"HTTP: {response.status_code}")
 
-        print(f"请求: {json.dumps(data)}")
-        print(f"响应: {json.dumps(result)}")
-
-        if result.get('ok') == 0:
+        if response.status_code == 400:
             print_success("正确拒绝了无效格式")
             return True
         else:
@@ -177,23 +159,16 @@ def test_token_auth(token):
     # 测试正确 Token
     print("\n测试正确 Token...")
     try:
-        data = {
-            "v": 1,
-            "ts": int(time.time() * 1000),
-            "source": "python_test"
-        }
         response = requests.post(
             f"{BASE_URL}/cmd",
             headers={
-                "Content-Type": "application/json",
+                "Content-Type": "application/octet-stream",
                 "X-MBBridge-Token": token
             },
-            data=json.dumps(data),
+            data=bytes([1]),
             timeout=2
         )
-        result = response.json()
-
-        if result.get('ok') == 1:
+        if response.status_code == 200:
             print_success("Token 验证通过")
             token_ok = True
         else:
@@ -209,10 +184,10 @@ def test_token_auth(token):
         response = requests.post(
             f"{BASE_URL}/cmd",
             headers={
-                "Content-Type": "application/json",
+                "Content-Type": "application/octet-stream",
                 "X-MBBridge-Token": "wrong_token"
             },
-            data=json.dumps(data),
+            data=bytes([1]),
             timeout=2
         )
 
@@ -237,18 +212,14 @@ def stress_test(count=10):
 
     for i in range(count):
         try:
-            data = {
-                "v": 1 if i % 2 == 0 else 2,
-                "ts": int(time.time() * 1000),
-                "source": "stress_test"
-            }
+            cmd = 1 if i % 2 == 0 else 2
             response = requests.post(
                 f"{BASE_URL}/cmd",
-                headers={"Content-Type": "application/json"},
-                data=json.dumps(data),
+                headers={"Content-Type": "application/octet-stream"},
+                data=bytes([cmd]),
                 timeout=2
             )
-            if response.json().get('ok') == 1:
+            if response.status_code == 200:
                 success_count += 1
         except Exception as e:
             print_error(f"第 {i+1} 个命令失败: {e}")

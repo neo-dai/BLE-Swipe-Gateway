@@ -172,7 +172,8 @@ class MainViewModel(application: Application) : AndroidViewModel(application),
     }
 
     private fun buildLogEntry(command: Command): String {
-        val timestamp = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", command.ts)
+        val ts = if (command.ts > 0) command.ts else System.currentTimeMillis()
+        val timestamp = android.text.format.DateFormat.format("yyyy-MM-dd HH:mm:ss", ts)
         return "[$timestamp] ${command.getCommandType()} v=${command.v} source=${command.source}"
     }
 

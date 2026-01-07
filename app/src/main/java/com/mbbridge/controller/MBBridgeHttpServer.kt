@@ -16,6 +16,7 @@ class MBBridgeHttpServer(
 
     companion object {
         private const val TAG = "MBBridgeCtrl"
+        private const val LOG_ENABLED = false
         const val HOST = "127.0.0.1"
         const val DEFAULT_PORT = 27123
     }
@@ -71,37 +72,46 @@ class MBBridgeHttpServer(
             )
         }
 
-        val body = parseBodyText(session)
-        if (body.isNullOrBlank()) {
+        val body = readBodyBytes(session)
+        if (body == null || body.isEmpty()) {
             return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Empty body"))
         }
 
-        log(LogLevel.DEBUG, "Body: $body")
-
-        val command = Command.fromJson(body)
-            ?: return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Invalid JSON"))
+        val command = Command.fromBytes(body)
+            ?: return jsonResponse(Response.Status.BAD_REQUEST, HttpResponse.error("Bad request: Invalid binary"))
 
         commandListener?.onCommandReceived(command)
-        log(
-            LogLevel.INFO,
-            "Command: ${command.getCommandType()} v=${command.v} ts=${command.ts} source=${command.source}"
-        )
-        return jsonResponse(Response.Status.OK, HttpResponse.success())
+        log(LogLevel.INFO, "Command: ${command.getCommandType()} v=${command.v}")
+        return binaryResponse(Response.Status.OK, byteArrayOf(1))
     }
 
-    private fun parseBodyText(session: IHTTPSession): String? {
+    private fun readBodyBytes(session: IHTTPSession): ByteArray? {
+        val lengthHeader = session.headers["content-length"]?.toLongOrNull() ?: 0L
+        if (lengthHeader <= 0) {
+            return null
+        }
         return try {
-            val files = HashMap<String, String>()
-            session.parseBody(files)
-            files["postData"]
+            val size = lengthHeader.toInt()
+            val buffer = ByteArray(size)
+            var read = 0
+            while (read < size) {
+                val r = session.inputStream.read(buffer, read, size - read)
+                if (r <= 0) break
+                read += r
+            }
+            if (read == size) buffer else buffer.copyOf(read)
         } catch (e: Exception) {
-            log(LogLevel.ERROR, "Parse body failed: ${e.message}")
+            log(LogLevel.ERROR, "Read body failed: ${e.message}")
             null
         }
     }
 
     private fun jsonResponse(status: Response.Status, body: HttpResponse): Response {
         return newFixedLengthResponse(status, "application/json", body.toJson())
+    }
+
+    private fun binaryResponse(status: Response.Status, body: ByteArray): Response {
+        return newFixedLengthResponse(status, "application/octet-stream", body.inputStream(), body.size.toLong())
     }
 
     fun startServer(): Boolean {
@@ -129,6 +139,9 @@ class MBBridgeHttpServer(
     }
 
     private fun log(level: LogLevel, message: String) {
+        if (!LOG_ENABLED) {
+            return
+        }
         when (level) {
             LogLevel.VERBOSE -> Log.v(TAG, message)
             LogLevel.DEBUG -> Log.d(TAG, message)

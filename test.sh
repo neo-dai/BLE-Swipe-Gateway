@@ -43,12 +43,11 @@ fi
 
 # 测试 PREV 命令
 echo -e "\n${YELLOW}2. 测试 PREV 命令...${NC}"
-PREV_RESULT=$($ADB shell curl -s -X POST http://127.0.0.1:27123/cmd \
-  -H "Content-Type: application/json" \
-  -d '{"v":1,"ts":'$(date +%s%3N)',"source":"test"}')
-echo "响应: $PREV_RESULT"
+PREV_CODE=$($ADB shell 'printf "\x01" | curl -s -o /dev/null -w "%{http_code}" \
+  -X POST http://127.0.0.1:27123/cmd -H "Content-Type: application/octet-stream" --data-binary @-')
+echo "HTTP: $PREV_CODE"
 
-if echo "$PREV_RESULT" | grep -q '"ok":1'; then
+if [ "$PREV_CODE" = "200" ]; then
     echo -e "${GREEN}✓ PREV 命令成功${NC}"
 else
     echo -e "${RED}✗ PREV 命令失败${NC}"
@@ -58,12 +57,11 @@ sleep 1
 
 # 测试 NEXT 命令
 echo -e "\n${YELLOW}3. 测试 NEXT 命令...${NC}"
-NEXT_RESULT=$($ADB shell curl -s -X POST http://127.0.0.1:27123/cmd \
-  -H "Content-Type: application/json" \
-  -d '{"v":2,"ts":'$(date +%s%3N)',"source":"test"}')
-echo "响应: $NEXT_RESULT"
+NEXT_CODE=$($ADB shell 'printf "\x02" | curl -s -o /dev/null -w "%{http_code}" \
+  -X POST http://127.0.0.1:27123/cmd -H "Content-Type: application/octet-stream" --data-binary @-')
+echo "HTTP: $NEXT_CODE"
 
-if echo "$NEXT_RESULT" | grep -q '"ok":1'; then
+if [ "$NEXT_CODE" = "200" ]; then
     echo -e "${GREEN}✓ NEXT 命令成功${NC}"
 else
     echo -e "${RED}✗ NEXT 命令失败${NC}"
@@ -71,12 +69,11 @@ fi
 
 # 测试错误格式
 echo -e "\n${YELLOW}4. 测试错误格式...${NC}"
-INVALID_RESULT=$($ADB shell curl -s -X POST http://127.0.0.1:27123/cmd \
-  -H "Content-Type: application/json" \
-  -d '{"invalid":"data"}')
-echo "响应: $INVALID_RESULT"
+INVALID_CODE=$($ADB shell 'curl -s -o /dev/null -w "%{http_code}" \
+  -X POST http://127.0.0.1:27123/cmd -H "Content-Type: application/octet-stream" --data-binary ""')
+echo "HTTP: $INVALID_CODE"
 
-if echo "$INVALID_RESULT" | grep -q '"ok":0'; then
+if [ "$INVALID_CODE" = "400" ]; then
     echo -e "${GREEN}✓ 正确拒绝了无效格式${NC}"
 else
     echo -e "${RED}✗ 应该拒绝无效格式${NC}"
@@ -101,26 +98,24 @@ read -r TEST_TOKEN
 
 if [ -n "$TEST_TOKEN" ]; then
     echo -e "\n测试正确 Token..."
-    AUTH_RESULT=$($ADB shell curl -s -X POST http://127.0.0.1:27123/cmd \
-      -H "Content-Type: application/json" \
-      -H "X-MBBridge-Token: $TEST_TOKEN" \
-      -d '{"v":1,"ts":'$(date +%s%3N)',"source":"test"}')
-    echo "响应: $AUTH_RESULT"
+    AUTH_CODE=$($ADB shell 'printf "\x01" | curl -s -o /dev/null -w "%{http_code}" \
+      -X POST http://127.0.0.1:27123/cmd -H "Content-Type: application/octet-stream" \
+      -H "X-MBBridge-Token: '"$TEST_TOKEN"'" --data-binary @-')
+    echo "HTTP: $AUTH_CODE"
 
-    if echo "$AUTH_RESULT" | grep -q '"ok":1'; then
+    if [ "$AUTH_CODE" = "200" ]; then
         echo -e "${GREEN}✓ Token 验证通过${NC}"
     else
         echo -e "${RED}✗ Token 验证失败${NC}"
     fi
 
     echo -e "\n测试错误 Token..."
-    WRONG_RESULT=$($ADB shell curl -s -X POST http://127.0.0.1:27123/cmd \
-      -H "Content-Type: application/json" \
-      -H "X-MBBridge-Token: wrong_token" \
-      -d '{"v":1,"ts":'$(date +%s%3N)',"source":"test"}')
-    echo "响应: $WRONG_RESULT"
+    WRONG_CODE=$($ADB shell 'printf "\x01" | curl -s -o /dev/null -w "%{http_code}" \
+      -X POST http://127.0.0.1:27123/cmd -H "Content-Type: application/octet-stream" \
+      -H "X-MBBridge-Token: wrong_token" --data-binary @-')
+    echo "HTTP: $WRONG_CODE"
 
-    if echo "$WRONG_RESULT" | grep -q 'Unauthorized'; then
+    if [ "$WRONG_CODE" = "401" ]; then
         echo -e "${GREEN}✓ 正确拒绝了错误 Token${NC}"
     else
         echo -e "${RED}✗ 应该拒绝错误 Token${NC}"

@@ -20,9 +20,8 @@
 
 ### ADB 测试
 ```bash
-adb shell curl -X POST http://127.0.0.1:27123/cmd \
-  -H "Content-Type: application/json" \
-  -d '{"v":1,"ts":1730000000000,"source":"test"}'
+adb shell 'printf "\x01" | curl -s -X POST http://127.0.0.1:27123/cmd \
+  -H "Content-Type: application/octet-stream" --data-binary @-'
 
 adb shell curl http://127.0.0.1:27123/health
 ```
